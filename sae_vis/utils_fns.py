@@ -25,6 +25,28 @@ from tqdm import tqdm
 from transformer_lens import utils
 
 VocabType: TypeAlias = Literal["embed", "unembed", "probes"]
+
+
+def _get_sae_hook_name(sae: Any) -> str:
+    """Get hook_name from SAE config, compatible with sae-lens <6 and ≥6 (JumpReLUSAEConfig)."""
+    if hasattr(sae.cfg, "hook_name"):
+        return sae.cfg.hook_name
+    return sae.cfg.metadata.hook_name
+
+
+def _get_sae_hook_layer(sae: Any) -> int:
+    """Get hook_layer from SAE config, compatible with sae-lens <6 and ≥6 (JumpReLUSAEConfig)."""
+    if hasattr(sae.cfg, "hook_layer"):
+        return sae.cfg.hook_layer
+    if hasattr(sae.cfg, "metadata") and hasattr(sae.cfg.metadata, "hook_layer"):
+        return sae.cfg.metadata.hook_layer
+    # Last resort: extract layer index from hook_name (e.g. "blocks.4.hook_resid_pre")
+    m = re.search(r"blocks\.(\d+)\.", _get_sae_hook_name(sae))
+    if m:
+        return int(m.group(1))
+    raise AttributeError(
+        f"Cannot determine hook_layer from SAE config (hook_name={_get_sae_hook_name(sae)!r})"
+    )
 Arr = np.ndarray
 T = TypeVar("T")
 

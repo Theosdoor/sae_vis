@@ -1,5 +1,3 @@
-import re
-
 import einops
 import torch
 from datasets import load_dataset
@@ -9,31 +7,9 @@ from sae_lens import SAE, HookedSAETransformer, SAEConfig
 from torch import Tensor
 from transformer_lens import HookedTransformer, utils
 
-from sae_vis.utils_fns import VocabType
+from sae_vis.utils_fns import VocabType, _get_sae_hook_layer, _get_sae_hook_name
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-def _get_sae_hook_name(sae: SAE) -> str:
-    """Get hook_name from SAE config, compatible with sae-lens <6 and ≥6 (JumpReLUSAEConfig)."""
-    if hasattr(sae.cfg, "hook_name"):
-        return sae.cfg.hook_name
-    return sae.cfg.metadata.hook_name
-
-
-def _get_sae_hook_layer(sae: SAE) -> int:
-    """Get hook_layer from SAE config, compatible with sae-lens <6 and ≥6 (JumpReLUSAEConfig)."""
-    if hasattr(sae.cfg, "hook_layer"):
-        return sae.cfg.hook_layer
-    if hasattr(sae.cfg, "metadata") and hasattr(sae.cfg.metadata, "hook_layer"):
-        return sae.cfg.metadata.hook_layer
-    # Last resort: extract layer index from hook_name (e.g. "blocks.4.hook_resid_pre")
-    m = re.search(r"blocks\.(\d+)\.", _get_sae_hook_name(sae))
-    if m:
-        return int(m.group(1))
-    raise AttributeError(
-        f"Cannot determine hook_layer from SAE config (hook_name={_get_sae_hook_name(sae)!r})"
-    )
 
 
 def to_resid_dir(

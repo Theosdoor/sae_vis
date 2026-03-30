@@ -32,18 +32,15 @@ from sae_vis.data_storing_fns import (
     SeqMultiGroupData,
     SequenceData,
 )
-from sae_vis.model_fns import (
-    _get_sae_hook_layer,
-    _get_sae_hook_name,
-    resid_final_pre_layernorm_to_logits,
-    to_resid_dir,
-)
+from sae_vis.model_fns import resid_final_pre_layernorm_to_logits, to_resid_dir
 from sae_vis.utils_fns import (
     METRIC_TITLES,
     FeatureStatistics,
     RollingCorrCoef,
     TopK,
     VocabType,
+    _get_sae_hook_layer,
+    _get_sae_hook_name,
     cross_entropy_loss,
     get_device,
     index_with_buffer,

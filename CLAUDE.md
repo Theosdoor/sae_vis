@@ -9,16 +9,11 @@
 - **Package manager**: Poetry
 - **License**: MIT
 - **Upstream repo**: https://github.com/callummcdougall/sae_vis
-- **This repo**: A personal fork for making fixes and contributing PRs upstream
+- **This repo**: A personal fork for local fixes and experimentation
 
 ### Fork Workflow
 
-This is a fork of the upstream `callummcdougall/sae_vis`. The intended workflow is:
-1. Develop fixes/improvements on feature branches in this fork
-2. Open PRs against the upstream repo at https://github.com/callummcdougall/sae_vis
-3. The upstream author accepts PRs but is not actively developing the project
-
-When making changes intended for upstream, keep PRs focused and ensure `make check-all` passes.
+This is a fork of `callummcdougall/sae_vis`. All development happens in this fork. Do **not** open PRs to the upstream repo unless explicitly asked.
 
 ## Repository Structure
 

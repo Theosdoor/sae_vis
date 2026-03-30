@@ -32,7 +32,12 @@ from sae_vis.data_storing_fns import (
     SeqMultiGroupData,
     SequenceData,
 )
-from sae_vis.model_fns import resid_final_pre_layernorm_to_logits, to_resid_dir
+from sae_vis.model_fns import (
+    _get_sae_hook_layer,
+    _get_sae_hook_name,
+    resid_final_pre_layernorm_to_logits,
+    to_resid_dir,
+)
 from sae_vis.utils_fns import (
     METRIC_TITLES,
     FeatureStatistics,
@@ -88,7 +93,7 @@ def parse_feature_data(
 
     # TODO - this function was originally written so that there could be a fn that didn't use the saes and the models. But I don't know if that's really necessary any more, and maybe there's more funcs than we need?
     """
-    acts_post_hook_name = f"{sae.cfg.hook_name}.hook_sae_acts_post"
+    acts_post_hook_name = f"{_get_sae_hook_name(sae)}.hook_sae_acts_post"
     all_feat_acts = cache[acts_post_hook_name]
 
     time_logs = {
@@ -350,10 +355,10 @@ def _get_feature_data(
     # Create tensors to store the feature activations & final values of the residual stream
     seqpos_slice = slice(*cfg.seqpos_slice)
     resid_final_hook_name = utils.get_act_name("resid_post", model.cfg.n_layers - 1)
-    acts_post_hook_name = f"{sae.cfg.hook_name}.hook_sae_acts_post"
-    sae_input_hook_name = f"{sae.cfg.hook_name}.hook_sae_input"
-    v_hook_name = utils.get_act_name("v", sae.cfg.hook_layer)
-    pattern_hook_name = utils.get_act_name("pattern", sae.cfg.hook_layer)
+    acts_post_hook_name = f"{_get_sae_hook_name(sae)}.hook_sae_acts_post"
+    sae_input_hook_name = f"{_get_sae_hook_name(sae)}.hook_sae_input"
+    v_hook_name = utils.get_act_name("v", _get_sae_hook_layer(sae))
+    pattern_hook_name = utils.get_act_name("pattern", _get_sae_hook_layer(sae))
     cache_dict = {
         resid_final_hook_name: torch.zeros(batch_size, seq_len, model.cfg.d_model),
         acts_post_hook_name: torch.zeros(batch_size, seq_len, len(feature_indices)),
@@ -362,7 +367,7 @@ def _get_feature_data(
     using_dfa = (
         (cfg.feature_centric_layout.seq_cfg is not None)
         and (cfg.feature_centric_layout.seq_cfg.dfa_for_attn_saes)
-        and (sae.cfg.hook_name.endswith("_z"))
+        and (_get_sae_hook_name(sae).endswith("_z"))
     )
     if using_dfa:
         cache_dict[v_hook_name] = torch.zeros(
@@ -374,7 +379,7 @@ def _get_feature_data(
 
     # Create objects to store the data for computing rolling stats
     sae_input_is_privileged = any(
-        [sae.cfg.hook_name.endswith(x) for x in ["mlp.hook_pre", "mlp.hook_post"]]
+        [_get_sae_hook_name(sae).endswith(x) for x in ["mlp.hook_pre", "mlp.hook_post"]]
     )
     corrcoef_neurons = RollingCorrCoef() if sae_input_is_privileged else None
     corrcoef_sae = RollingCorrCoef(indices=feature_indices, with_self=True)
@@ -653,10 +658,10 @@ def get_sequences_data(
     resid_final_hook_name = utils.get_act_name(
         "resid_post", layer=model.cfg.n_layers - 1
     )
-    acts_post_hook_name = f"{sae.cfg.hook_name}.hook_sae_acts_post"
-    # sae_acts_pre_hook_name = f"{sae.cfg.hook_name}.hook_sae_acts_pre"
-    v_hook_name = utils.get_act_name("v", layer=sae.cfg.hook_layer)
-    pattern_hook_name = utils.get_act_name("pattern", layer=sae.cfg.hook_layer)
+    acts_post_hook_name = f"{_get_sae_hook_name(sae)}.hook_sae_acts_post"
+    # sae_acts_pre_hook_name = f"{_get_sae_hook_name(sae)}.hook_sae_acts_pre"
+    v_hook_name = utils.get_act_name("v", layer=_get_sae_hook_layer(sae))
+    pattern_hook_name = utils.get_act_name("pattern", layer=_get_sae_hook_layer(sae))
 
     resid_post = cache[resid_final_hook_name]
     feat_acts = cache[acts_post_hook_name][..., feat_idx]
@@ -682,7 +687,7 @@ def get_sequences_data(
         k=seq_cfg.top_acts_group_size,
         buffer=buffer_to_exclude_from_ex,
     )
-    use_dfa = seq_cfg.dfa_for_attn_saes and sae.cfg.hook_name.endswith("hook_z")
+    use_dfa = seq_cfg.dfa_for_attn_saes and _get_sae_hook_name(sae).endswith("hook_z")
     first_title = (
         "TOP ACTIVATIONS (right) & DFA (left)" if use_dfa else "TOP ACTIVATIONS"
     )
@@ -1131,7 +1136,7 @@ def get_prompt_data(
     )
 
     resid_final_hook_name = utils.get_act_name("resid_post", model.cfg.n_layers - 1)
-    acts_post_hook_name = f"{sae.cfg.hook_name}.hook_sae_acts_post"
+    acts_post_hook_name = f"{_get_sae_hook_name(sae)}.hook_sae_acts_post"
     sae.use_error_term = True
     _, cache = model.run_with_cache_with_saes(
         tokens,
